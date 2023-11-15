@@ -10,7 +10,7 @@ import numpy as np
 import torch
 
 from torch.optim import AdamW
-from util.multigpu_fused_adam import FusedAdam
+# from util.multigpu_fused_adam import FusedAdam
 
 from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader
@@ -243,7 +243,7 @@ class Runner:
                 'weight_decay': 0.0
             }
         ]
-        if self.config["optimizer"].lower() == 'adamw':
+        if self.config["optimizer"].lower() == 'adamw' and False:
             # FusedAdam is faster. Requires apex.
             # Otherwise use AdamW
             opt_class = FusedAdam
