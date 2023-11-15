@@ -213,6 +213,9 @@ class Runner:
         logger.info('**********Finished training**********')
         logger.info('Actual update steps: %d' % self.scheduler._step_count)
 
+        f1, _ = self.evaluate(
+            model, examples_test, stored_info, self.scheduler._step_count
+        )
         return
 
     def evaluate(
