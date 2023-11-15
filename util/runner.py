@@ -121,7 +121,7 @@ class Runner:
         loss_history = []  # Full history of effective loss; length equals total update steps
         max_f1, max_f1_test = 0, 0
         start_time = time.time()
-        if type(self.optimizer) == FusedAdam:
+        if False:  # type(self.optimizer) == FusedAdam:
             self.optimizer.zero_grad()
         else:
             self.optimizer.zero_grad(set_to_none=True)
@@ -166,7 +166,7 @@ class Runner:
                         )
                     self.optimizer.step()
                     self.scheduler.step()
-                    if type(self.optimizer) == FusedAdam:
+                    if False:
                         self.optimizer.zero_grad()
                     else:
                         self.optimizer.zero_grad(set_to_none=True)
@@ -243,10 +243,12 @@ class Runner:
                 'weight_decay': 0.0
             }
         ]
+        opt_class = AdamW
         if self.config["optimizer"].lower() == 'adamw' and False:
             # FusedAdam is faster. Requires apex.
             # Otherwise use AdamW
-            opt_class = FusedAdam
+            # opt_class = FusedAdam
+            pass
 
         logger.info(opt_class)
         optimizer = opt_class(
