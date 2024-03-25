@@ -247,6 +247,8 @@ if __name__ == "__main__":
 
     if "conll03" in input_dir:
         typefile = f"{input_dir}/conll03_types.json"
+    else:
+        typefile = sys.argv[3]
 
     with open(typefile) as input_file:
         labels = json.load(input_file)
