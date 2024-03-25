@@ -126,6 +126,8 @@ def minimize_partition(
 ):
     if "conll03" in input_dir:
         input_path = f"{input_dir}/conll03_{name}.json"
+    if "genia" in input_dir:
+        input_path = f"{input_dir}/genia_{name}.json"
 
     output_path = f"{output_dir}/{name}.t5-small.jsonlines"
 
@@ -238,6 +240,12 @@ def minimize_language(
             minimize_partition(
                 name, entity_labels, stats, 
                 tokenizer, input_dir, output_dir
+            )
+    if "genia" in input_dir:
+        for name in ["train_dev", "test", "test_filtered", "train_dev_filtered"]:
+            minimize_partition(
+                name, entity_labels, stats,
+                tokenizer, input_dir, output_dir,
             )
     return
 
