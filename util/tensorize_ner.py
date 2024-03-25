@@ -43,6 +43,12 @@ class NERDataProcessor(object):
                     'dev': join(self.data_dir, f'dev.{suffix}'),
                     'test': join(self.data_dir, f'test.{suffix}')
                 }
+            elif self.dataset == "genia_ner":
+                paths = {
+                    'train': join(self.data_dir, f'train_dev.{suffix}'),
+                    'dev': join(self.data_dir, f'test.{suffix}'),
+                    'test': join(self.data_dir, f'test.{suffix}')
+                }
 
             for split, path in paths.items():
                 logger.info(
