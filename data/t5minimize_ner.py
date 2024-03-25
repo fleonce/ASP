@@ -144,7 +144,7 @@ def minimize_partition(
 
             tokens = instance['tokens']
             entities = instance['entities']
-            extended = instance['extended']
+            extended = instance['extended'] if 'extended' in instance else tokens
 
             word_idx = -1
             for word in tokens:
