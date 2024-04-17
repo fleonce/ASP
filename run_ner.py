@@ -41,6 +41,8 @@ class NERRunner(Runner):
             pin_memory=True
         )
         model.eval()
+        times = []
+        total_examples = 0
         for i, (doc_keys, tensor_example) in enumerate(evalloader):
             example_gpu = {}
 
@@ -52,17 +54,22 @@ class NERRunner(Runner):
             with torch.no_grad(), torch.cuda.amp.autocast(
                 enabled=self.use_amp, dtype=torch.bfloat16
             ):
+                start_t = time.time()
                 output = model(**example_gpu)
+                times.append(time.time() - start_t)
 
             for batch_id, doc_key in enumerate(doc_keys):
                 gold_res = model.extract_gold_res_from_gold_annotation(
                     {k:v[batch_id] for k, v in tensor_example.items()}, 
                     stored_info['example'][doc_key]
                 )
+                start_t = time.time()
                 decoded_results = model.decoding(
                     {k:v[batch_id] for k,v in output.items()}, 
                     stored_info['example'][doc_key]
                 )
+                times.append(time.time() - start_t)
+                total_examples += 1
 
                 decoded_results.update(
                     gold_res
@@ -74,11 +81,15 @@ class NERRunner(Runner):
                     util.runner.logger.info(stored_info['example'][doc_key])
                     util.runner.logger.info(decoded_results)
 
+        total_time = sum(times)
         p,r,f = evaluator.get_prf()
         metrics = {
             'Eval_Ent_Precision': p[0] * 100,
             'Eval_Ent_Recall': r[0] * 100,
-            'Eval_Ent_F1': f[0] * 100
+            'Eval_Ent_F1': f[0] * 100,
+            'Eval_Time': total_time,
+            'Eval_Examples': total_examples,
+            'Eval_Examples_Per_Second': total_examples / total_time
         }
         for k,v in metrics.items():
             util.runner.logger.info('%s: %.4f'%(k, v))
