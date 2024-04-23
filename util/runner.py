@@ -8,6 +8,7 @@ import random
 import numpy as np
 
 import torch
+from torch.nn import Module
 
 from torch.optim import AdamW
 # from util.multigpu_fused_adam import FusedAdam
@@ -55,7 +56,7 @@ class Runner:
         logger.info('Log file path: %s' % log_path)
 
         # Set up device
-        self.device = 'cpu' if gpu_id is None else gpu_id
+        self.device = 'meta' if gpu_id < 0 else gpu_id
         # Use mixed precision training
         self.use_amp = self.config['use_amp']
 
@@ -84,13 +85,17 @@ class Runner:
         return model, 0
 
 
-    def train(self, model, continued=False, start_epoch=0):
+    def train(self, model: Module, continued=False, start_epoch=0):
         logger.info('Config:')
         for name, value in self.config.items():
             logger.info('%s: %s' % (name, value))
         logger.info('Model parameters:')
         for name, param in model.named_parameters():
             logger.info('%s: %s' % (name, tuple(param.shape)))
+        total_params = sum(param.numel() for param in model.parameters())
+        logger.info('Total parameters: %d (%f M)' % (total_params, total_params / 1e6))
+        if model.device == "meta":
+            exit(0)
 
         epochs, grad_accum = self.config['num_epochs'], self.config['gradient_accumulation_steps']
         batch_size = self.config['batch_size']
