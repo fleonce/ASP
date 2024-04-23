@@ -93,7 +93,10 @@ class Runner:
         for name, param in model.named_parameters():
             logger.info('%s: %s' % (name, tuple(param.shape)))
         total_params = sum(param.numel() for param in model.parameters())
-        logger.info('Total parameters: %d (%f M)' % (total_params, total_params / 1e6))
+        m_params = (total_params / 1e6, 'M')
+        if total_params >= 1e9:
+            m_params = (total_params / 1e9, 'B')
+        logger.info('Total parameters: %d (%f %s)' % ((total_params,) + m_params))
         if model.device == "meta":
             exit(0)
 
