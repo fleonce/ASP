@@ -12,6 +12,7 @@ import subprocess
 import collections
 
 from collections import defaultdict
+from os.path import basename
 from unittest import result
 
 from transformers import T5Tokenizer
@@ -124,11 +125,11 @@ def minimize_partition(
     name, entity_labels, stats,
     tokenizer, input_dir, output_dir
 ):
-    if "conll03" in input_dir:
-        input_path = f"{input_dir}/conll03_{name}.json"
-    if "genia" in input_dir:
-        input_path = f"{input_dir}/genia_{name}.json"
-
+    if os.path.exists(name):
+        name = basename(name)
+    if name.endswith(".json"):
+        name = name[:-len(".json")]
+    input_path = f"{input_dir}/{name}.json"
     output_path = f"{output_dir}/{name}.t5-small.jsonlines"
 
     print("Minimizing {}".format(input_path))
@@ -229,48 +230,15 @@ def get_subtokens(word):
 
 def minimize_language(
     entity_labels, stats,
-    input_dir, output_dir
+    input_dir, output_dir,
+    names
 ):
     # including typed markers
     tokenizer.add_tokens(MENTION_START)
     tokenizer.add_tokens(MENTION_END)
 
-    if "conll03" in input_dir:
-        for name in ["dev", "test", "train"]:
-            minimize_partition(
-                name, entity_labels, stats, 
-                tokenizer, input_dir, output_dir
-            )
-    if "genia" in input_dir:
-        for name in ["train_dev", "test", "test_filtered", "train_dev_filtered"]:
-            minimize_partition(
-                name, entity_labels, stats,
-                tokenizer, input_dir, output_dir,
-            )
-    return
-
-if __name__ == "__main__":
-    input_dir = sys.argv[1]
-    output_dir = sys.argv[2]
-
-    if "conll03" in input_dir:
-        typefile = f"{input_dir}/conll03_types.json"
-    else:
-        typefile = sys.argv[3]
-
-    with open(typefile) as input_file:
-        labels = json.load(input_file)
-    entity_labels = {}
-
-    for k in labels['entities'].keys():
-        entity_labels[k] = len(entity_labels)
-
-    if not os.path.isdir(output_dir):
-        os.mkdir(output_dir)
-
-    stats = defaultdict(int)
-    minimize_language(
-        entity_labels, stats, 
-        input_dir, output_dir
-    )
-    print("stats:", stats)
+    for name in names:
+        minimize_partition(
+            name, entity_labels, stats,
+            tokenizer, input_dir, output_dir
+        )

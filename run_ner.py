@@ -1,6 +1,10 @@
+import json
+import os
 import sys
 import logging
 import random
+from collections import OrderedDict, defaultdict
+
 import numpy as np
 
 import torch
@@ -16,6 +20,7 @@ from os.path import join
 from datetime import datetime
 
 import util
+from data.t5minimize_ner import minimize_language
 from util.runner import Runner
 
 from metrics import EREEvaluator
@@ -83,14 +88,14 @@ class NERRunner(Runner):
 
         total_time = sum(times)
         p,r,f = evaluator.get_prf()
-        metrics = {
+        metrics = OrderedDict({
             'Eval_Ent_Precision': p[0] * 100,
             'Eval_Ent_Recall': r[0] * 100,
             'Eval_Ent_F1': f[0] * 100,
             'Eval_Time': total_time,
             'Eval_Examples': total_examples,
             'Eval_Examples_Per_Second': total_examples / total_time
-        }
+        })
         for k,v in metrics.items():
             util.runner.logger.info('%s: %.4f'%(k, v))
 
@@ -99,17 +104,38 @@ class NERRunner(Runner):
 
 # python run_ner.py t5_base 0
 if __name__ == '__main__':
-    config_name, gpu_id = sys.argv[1], int(sys.argv[2])
-    saved_suffix = sys.argv[3] if len(sys.argv) >= 4 else None
+    config_file, config_name, gpu_id = sys.argv[1], sys.argv[2], 0
+    config = util.initialize_config(config_name, config_file=config_file)
+
+    data_dir = config["data_dir"]
+    types_path = join(data_dir, config["types_path"])
+    with open(types_path) as input_file:
+        labels = json.load(input_file)
+    entity_labels = {}
+
+    for k in labels['entities'].keys():
+        entity_labels[k] = len(entity_labels)
+
+    stats = defaultdict(int)
+    minimize_language(
+        entity_labels,
+        stats,
+        data_dir,
+        config["local_dir"],
+        [
+            config["train_path"],
+            config["dev_path"],
+            config["test_path"],
+            config["test_path_seen"],
+            config["test_path_unseen"],
+        ]
+    )
+    print("stats:", stats)
+
     runner = NERRunner(
-        config_file="configs/ner.conf",
+        config_file=config_file,
         config_name=config_name,
         gpu_id=gpu_id
     )
-
-    if saved_suffix is not None:
-        model, start_epoch = runner.initialize_model(saved_suffix, continue_training=True)
-        runner.train(model, continued=True, start_epoch=start_epoch)
-    else:
-        model, _ = runner.initialize_model()
-        runner.train(model, continued=False)
+    model, _ = runner.initialize_model()
+    runner.train(model, continued=False)

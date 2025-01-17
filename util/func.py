@@ -22,10 +22,9 @@ def initialize_config(config_name, config_file="experiments.conf"):
     logger.info("Running experiment: {}".format(config_name))
 
     config = pyhocon.ConfigFactory.parse_file(join("./", config_file))[config_name]
-    config['log_dir'] = join(config["log_root"], config_name)
     makedirs(config['log_dir'], exist_ok=True)
 
-    config['tb_dir'] = join(config['log_root'], 'tensorboard')
+    config['tb_dir'] = join(config['log_dir'], 'tensorboard')
     makedirs(config['tb_dir'], exist_ok=True)
 
     logger.info(pyhocon.HOCONConverter.convert(config, "hocon"))

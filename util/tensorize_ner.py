@@ -2,7 +2,7 @@ import numpy as np
 import random
 from transformers import T5Tokenizer
 import os
-from os.path import join
+from os.path import join, basename
 import json
 import copy
 import pickle
@@ -21,11 +21,12 @@ class NERDataProcessor(object):
         self.config = config
 
         self.data_dir = config['data_dir']
+        self.local_dir = config['local_dir']
         self.dataset = config['dataset']
 
         # Get tensorized samples
         cache_path = self.get_cache_path()
-        if os.path.exists(cache_path):
+        if os.path.exists(cache_path) and False:
             # Load cached tensors if exists
             with open(cache_path, 'rb') as f:
                 self.tensor_samples, self.stored_info = pickle.load(f)
@@ -37,27 +38,33 @@ class NERDataProcessor(object):
             tensorizer = Tensorizer(self.config)
             suffix = f'{self.config["plm_tokenizer_name"]}.jsonlines'
 
-            if self.dataset == "conll03_ner":
-                paths = {
-                    'train': join(self.data_dir, f'train.{suffix}'),
-                    'dev': join(self.data_dir, f'dev.{suffix}'),
-                    'test': join(self.data_dir, f'test.{suffix}')
-                }
-            elif self.dataset == "genia_ner":
-                paths = {
-                    'train': join(self.data_dir, f'train_dev.{suffix}'),
-                    'dev': join(self.data_dir, f'test.{suffix}'),
-                    'test': join(self.data_dir, f'test.{suffix}')
-                }
+            def join_if_not_exists(l_dir, f_path):
+                if os.path.exists(f_path):
+                    return join(l_dir, basename(f_path))
+                return join(l_dir, f_path)
+
+            paths = {
+                'train': join_if_not_exists(self.local_dir, self.config['train_path']),
+                'dev': join_if_not_exists(self.local_dir, self.config['dev_path']),
+                'test': join_if_not_exists(self.local_dir, self.config['test_path']),
+                'seen_test': join_if_not_exists(self.local_dir, self.config['test_path_seen']),
+                'unseen_test': join_if_not_exists(self.local_dir, self.config['test_path_unseen']),
+            }
 
             for split, path in paths.items():
+                path = path[:-len(".json")]
+                path = path + "." + suffix
                 logger.info(
                     f'Tensorizing examples from {path}; results will be cached in {cache_path}')
                 is_training = (split == 'train')
 
                 samples = json.load(open(path))
-                tensor_samples = [tensorizer.tensorize_example(
-                    sample, is_training) for sample in samples]
+                tensor_samples = [
+                    tensorizer.tensorize_example(
+                        sample,
+                        is_training,
+                    ) for sample_id, sample in enumerate(samples)
+                ]
 
                 self.tensor_samples[split] = NERDataset(
                     sorted(
@@ -66,9 +73,6 @@ class NERDataProcessor(object):
                     )
                 )
             self.stored_info = tensorizer.stored_info
-            # Cache tensorized samples
-            pickle.dump((self.tensor_samples, self.stored_info),
-                        open(cache_path, 'wb'))
 
     def get_tensor_examples(self):
         # For each split, return list of tensorized samples to allow variable length input (batch size = 1)
@@ -133,7 +137,7 @@ class Tensorizer:
         self, example, is_training
     ):
         # Keep info to store
-        doc_key = example['doc_id']
+        doc_key = example.get("doc_id")
         self.stored_info['subtoken_maps'][doc_key] = example.get(
             'subtoken_map', None)
         self.stored_info['example'][doc_key] = example

@@ -2,9 +2,12 @@
     Runner for training and testing models.
     Tianyu Liu
 """
+import json
 import sys
 import logging
 import random
+from collections import OrderedDict
+
 import numpy as np
 
 import torch
@@ -105,6 +108,7 @@ class Runner:
 
         # Set up data
         examples_train, examples_dev, examples_test = self.data.get_tensor_examples()
+        examples_seen, examples_unseen = self.data.tensor_samples["seen_test"], self.data.tensor_samples["unseen_test"]
         stored_info = self.data.get_stored_info()
 
         # Set up optimizer and scheduler
@@ -221,9 +225,31 @@ class Runner:
         logger.info('**********Finished training**********')
         logger.info('Actual update steps: %d' % self.scheduler._step_count)
 
-        f1, _ = self.evaluate(
+        logger.info('Test')
+        f1, metrics = self.evaluate(
             model, examples_test, stored_info, self.scheduler._step_count
         )
+
+        logger.info('Seen')
+        seen_f1, seen_metrics = self.evaluate(
+            model, examples_seen, stored_info, self.scheduler._step_count
+        )
+        logger.info('Unseen')
+        unseen_f1, unseen_metrics = self.evaluate(
+            model, examples_unseen, stored_info, self.scheduler._step_count
+        )
+
+        def prefix_dict(inp: dict, prefix: str):
+            return OrderedDict({prefix + ke: va for ke, va in inp.items()})
+
+        with open("metrics.json", "w") as f:
+            json.dump({
+                "test_metrics": dict(
+                    **metrics,
+                    **prefix_dict(seen_metrics, "seen_"),
+                    **prefix_dict(unseen_metrics, "unseen_"),
+                )
+            }, f)
         return
 
     def evaluate(
