@@ -130,7 +130,8 @@ def minimize_partition(
     if name.endswith(".json"):
         name = name[:-len(".json")]
     input_path = f"{input_dir}/{name}.json"
-    output_path = f"{output_dir}/{name}.t5-small.jsonlines"
+    os.makedirs(output_dir, exists_ok=True)
+    output_path = f"{output_dir}/{name}.{tokenizer.name_or_path.replace('/', '_')}.jsonlines"
 
     print("Minimizing {}".format(input_path))
     processed_dataset = []
@@ -231,7 +232,7 @@ def get_subtokens(word):
 def minimize_language(
     entity_labels, stats,
     input_dir, output_dir,
-    names
+    names, tokenizer
 ):
     # including typed markers
     tokenizer.add_tokens(MENTION_START)
