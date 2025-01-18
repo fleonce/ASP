@@ -19,6 +19,8 @@ import time
 from os.path import join
 from datetime import datetime
 
+from transformers import AutoTokenizer
+
 import util
 from data.t5minimize_ner import minimize_language
 from util.runner import Runner
@@ -117,6 +119,7 @@ if __name__ == '__main__':
         entity_labels[k] = len(entity_labels)
 
     stats = defaultdict(int)
+    tokenizer = AutoTokenizer.from_pretrained(config['plm_tokenizer_name'])
     minimize_language(
         entity_labels,
         stats,
@@ -128,7 +131,8 @@ if __name__ == '__main__':
             config["test_path"],
             config["test_path_seen"],
             config["test_path_unseen"],
-        ]
+        ],
+        tokenizer,
     )
     print("stats:", stats)
 

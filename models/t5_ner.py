@@ -12,6 +12,7 @@ import torch.utils.checkpoint
 from torch import nn
 import torch.nn.init as init
 import torch.nn.functional as F
+from transformers import AutoTokenizer
 
 from transformers.models.t5.modeling_t5 import (
     T5PreTrainedModel, T5Model,
@@ -45,6 +46,7 @@ class T5NER(T5PreTrainedModel):
         asp_linking_distance_num_buckets: int = 16,
         asp_activation: str='relu',
         num_typing_classes: int = 4,
+        max_nest_depth: int = 1,
         mention_start_id: int = 0,
         mention_end_id: int = 0,
     ):
@@ -60,7 +62,7 @@ class T5NER(T5PreTrainedModel):
 
         self.num_typing_classes = num_typing_classes
         # conll04, ace04, ace05 has no nested mention
-        self.max_nest_depth = 1
+        self.max_nest_depth = max_nest_depth
         self.action_head = util.make_ffnn(
             self.config.d_model,
             hidden_size=[asp_hidden_dim],

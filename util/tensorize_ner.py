@@ -36,7 +36,7 @@ class NERDataProcessor(object):
             # Generate tensorized samples
             self.tensor_samples = {}
             tensorizer = Tensorizer(self.config)
-            suffix = f'{self.config["plm_tokenizer_name"]}.jsonlines'
+            suffix = f'{self.config["plm_tokenizer_name"].replace("/", "_")}.jsonlines'
 
             def join_if_not_exists(l_dir, f_path):
                 if os.path.exists(f_path):
@@ -171,6 +171,7 @@ class Tensorizer:
         target_mask = torch.tensor(target_mask, dtype=torch.long)
 
         action_labels = self.get_action_labels(target_ids)
+#        assert False, list(zip(map(lambda x: self.tz.decode(x.item()), target_ids), map(lambda x: x.item(), action_labels)))
 
         ent_types = torch.tensor(ent_type_sequence, dtype=torch.long)
         ent_indices = torch.tensor(ent_indices, dtype=torch.long)
