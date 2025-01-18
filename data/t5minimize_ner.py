@@ -130,7 +130,7 @@ def minimize_partition(
     if name.endswith(".json"):
         name = name[:-len(".json")]
     input_path = f"{input_dir}/{name}.json"
-    os.makedirs(output_dir, exists_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
     output_path = f"{output_dir}/{name}.{tokenizer.name_or_path.replace('/', '_')}.jsonlines"
 
     print("Minimizing {}".format(input_path))
